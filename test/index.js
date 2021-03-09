@@ -1,3 +1,5 @@
+require('@babel/register');
+require("@babel/polyfill");
 // Set options as a parameter, environment variable, or rc file.
 // this depends on Node v12 and esm.
 require = require("esm")(module/*, options*/)

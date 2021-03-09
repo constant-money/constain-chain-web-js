@@ -1,4 +1,4 @@
-package internal
+package util
 
 import (
 	"crypto/rand"
@@ -32,24 +32,4 @@ var(
 
 func RandBigIntMaxRange(max *big.Int) (*big.Int, error) {
 	return rand.Int(rand.Reader, max)
-}
-
-
-func grabBytes(coinBytes *[]byte, offset *int) ([]byte, error) {
-	b := *coinBytes
-	if *offset >= len(b) {
-		return nil, genericError
-	}
-	lenField := b[*offset]
-	*offset += 1
-	result := make([]byte, lenField)
-	if lenField != 0 {
-		if *offset+int(lenField) > len(b) {
-			return nil, genericError
-		}
-		data := b[*offset : *offset+int(lenField)]
-		copy(result, data)
-		*offset += int(lenField)
-	}
-	return result, nil
 }

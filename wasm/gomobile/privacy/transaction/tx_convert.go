@@ -1,6 +1,8 @@
-package internal
+package transaction
 
-import(
+import (
+	"incognito-chain/util"
+
 	// "encoding/base64"
 	// "encoding/json"
 	// "math/big"
@@ -15,7 +17,6 @@ import(
 	"incognito-chain/privacy/privacy_v1/schnorr"
 	"incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
 	"incognito-chain/privacy/privacy_v2"
-
 )
 
 func SignNoPrivacy(privKey *privacy.PrivateKey, hashedMessage []byte) (signatureBytes []byte, sigPubKey []byte, err error) {
@@ -32,7 +33,7 @@ func SignNoPrivacy(privKey *privacy.PrivateKey, hashedMessage []byte) (signature
 	return signatureBytes, sigPubKey, nil
 }
 
-func initializeTxConversion(tx *Tx, params *TxPrivacyInitParams, paymentsPtr *[]printedPaymentInfo) error {
+func initializeTxConversion(tx *Tx, params *TxPrivacyInitParams, paymentsPtr *[]PrintedPaymentInfo) error {
 	var err error
 	// Get Keyset from param
 	skBytes := *params.SenderSK
@@ -142,7 +143,7 @@ func (txToken *TxToken) initTokenConversion(txNormal *Tx, params *InitParamsAsm)
 	if err := initializeTxConversion(txNormal, txConvertParams, &params.TokenParams.TokenPaymentInfo); err != nil {
 		return err
 	}
-	txNormal.Type = TxTokenConversionType
+	txNormal.Type = util.TxTokenConversionType
 	if err := proveConversionAsm(txNormal, txConvertParams); err != nil {
 		return err
 	}

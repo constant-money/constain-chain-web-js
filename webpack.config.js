@@ -49,7 +49,7 @@ module.exports = (env, argv) => {
     const isProduction = (argv.mode === 'production');
 
     return {
-        devtool: '', //'source-map',
+        devtool: isProduction ? '' : 'source-map', //'source-map',
         entry: {
             wallet: './lib/wallet.js',
             // tx: './lib/transactor.js',
@@ -58,7 +58,7 @@ module.exports = (env, argv) => {
 
         output: {
             path: path.resolve(__dirname, 'dist'),
-            filename: '[name].bundle.js',
+            filename: '[name].js',
             library: '',
             libraryTarget: 'umd'
         },

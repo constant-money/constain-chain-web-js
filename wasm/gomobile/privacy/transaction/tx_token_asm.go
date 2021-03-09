@@ -1,6 +1,7 @@
-package internal
+package transaction
 
-import(
+import (
+	"incognito-chain/util"
 	"math/big"
 	// "fmt"
 	"encoding/json"
@@ -9,9 +10,9 @@ import(
 	"github.com/pkg/errors"
 	"incognito-chain/common"
 
+	"incognito-chain/metadata"
 	"incognito-chain/privacy"
 	"incognito-chain/privacy/privacy_v2/mlsag"
-	"incognito-chain/metadata"
 )
 
 const (
@@ -47,7 +48,7 @@ func (td TxTokenData) Hash() (*common.Hash, error){
 	return &hash, nil
 }
 
-func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx{
+func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx {
 	result := &Tx{
 		Version: 	txPRV.Version,
 		Type: 		txPRV.Type,
@@ -82,9 +83,9 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx{
 }
 
 type TxToken struct {
-	Tx 				Tx 					`json:"Tx"`
-	TokenData 		TxTokenData 		`json:"TxTokenPrivacyData"`
-	cachedTxNormal	*Tx
+	Tx             Tx          `json:"Tx"`
+	TokenData      TxTokenData `json:"TxTokenPrivacyData"`
+	cachedTxNormal *Tx
 }
 func (tx *TxToken) Hash() *common.Hash{
 	firstHash := tx.Tx.Hash()
@@ -96,7 +97,7 @@ func (tx *TxToken) Hash() *common.Hash{
 	return &result
 }
 
-func (tx *TxToken) GetTxNormal() *Tx{
+func (tx *TxToken) GetTxNormal() *Tx {
 	if tx.cachedTxNormal!=nil{
 		return tx.cachedTxNormal
 	}
@@ -139,14 +140,14 @@ type TokenParam struct {
 }
 
 type TokenInnerParams struct{
-	TokenID 	string 					   	`json:"TokenID"`
-	TokenPaymentInfo []printedPaymentInfo  	`json:"PaymentInfo"`
-	TokenInput	[]CoinInter				   	`json:"InputCoins"`
-	TokenCache 	CoinCache 				   	`json:"CoinCache"`
-	Type 		int 						`json:"TokenTxType",omitempty`
-	TokenName 	string 						`json:"TokenName",omitempty`
-	TokenSymbol string 						`json:"TokenSymbol",omitempty`
-	Mintable 	bool 						`json:"TokenMintable",omitempty`
+	TokenID          string               `json:"TokenID"`
+	TokenPaymentInfo []PrintedPaymentInfo `json:"PaymentInfo"`
+	TokenInput       []CoinInter          `json:"InputCoins"`
+	TokenCache       CoinCache            `json:"CoinCache"`
+	Type             int                  `json:"TokenTxType",omitempty`
+	TokenName        string               `json:"TokenName",omitempty`
+	TokenSymbol      string               `json:"TokenSymbol",omitempty`
+	Mintable         bool                 `json:"TokenMintable",omitempty`
 }
 
 func (params *TokenInnerParams) GetInputCoins() ([]privacy.PlainCoin, []uint64){
@@ -228,7 +229,7 @@ func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy
 	senderSK := params.SenderSK
 	tokenID := params.TokenID
 	if tokenID==nil{
-		tokenID = &PRVCoinID
+		tokenID = &util.PRVCoinID
 	}
 	rehashed := privacy.HashToPoint(tokenID[:])
 	sumRand := new(privacy.Scalar).FromUint64(0)
@@ -370,7 +371,7 @@ func generateMlsagRingCA(inputCoins []privacy.PlainCoin, inputIndexes []uint64, 
 			}
 		} else {
 			for j := 0; j < len(inputCoins); j += 1 {
-				temp, _ := RandBigIntMaxRange(randRange)
+				temp, _ := util.RandBigIntMaxRange(randRange)
 				pos := int(temp.Uint64())
 				pkBytes := coinCache.PublicKeys[pos]
 				rowIndexes[j] = big.NewInt(0).SetUint64(coinCache.Indexes[pos])
@@ -445,7 +446,7 @@ func (tx *Tx) signCA(inp []privacy.PlainCoin, inputIndexes []uint64, out []*priv
 	// }
 
 	// Generate Ring
-	piBig,piErr := RandBigIntMaxRange(big.NewInt(int64(ringSize)))
+	piBig,piErr := util.RandBigIntMaxRange(big.NewInt(int64(ringSize)))
 	if piErr!=nil{
 		return piErr
 	}
@@ -494,7 +495,7 @@ func (tx *Tx) proveToken(params *InitParamsAsm) (bool, error) {
 	if temp==nil{
 		return false, errors.Errorf("Error parsing parameters")
 	}
-	tid, err := getTokenIDFromString(params.TokenParams.TokenID)
+	tid, err := GetTokenIDFromString(params.TokenParams.TokenID)
 	if err!=nil{
 		return false, errors.Errorf("Error parsing token id")
 	}
@@ -565,7 +566,7 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *InitParamsAsm) error {
 
 		var plainTokenID *common.Hash
 		if params_compat.TokenParams.Mintable {
-			propertyID, err := getTokenIDFromString(params_compat.TokenParams.PropertyID)
+			propertyID, err := GetTokenIDFromString(params_compat.TokenParams.PropertyID)
 			if err != nil {
 				return err
 			}
@@ -635,7 +636,7 @@ func (tx *Tx) provePRV(params *InitParamsAsm) ([]privacy.PlainCoin, []uint64, []
 	return inputCoins, inputIndexes, outputCoins, nil
 }
 
-func (txToken *TxToken) initPRV(feeTx * Tx, params *InitParamsAsm) ([]privacy.PlainCoin, []uint64, []*privacy.CoinV2, error) {
+func (txToken *TxToken) initPRV(feeTx *Tx, params *InitParamsAsm) ([]privacy.PlainCoin, []uint64, []*privacy.CoinV2, error) {
 	feeTx.Type = common.TxCustomTokenPrivacyType
 	inps, inputIndexes, outs, err := feeTx.provePRV(params)
 	if err != nil {

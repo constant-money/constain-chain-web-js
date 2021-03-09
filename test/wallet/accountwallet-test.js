@@ -28,7 +28,6 @@ import {
 // const rpcClient = new RpcClient("https://testnet.incognito.org/fullnode");
 // const rpcClient = new RpcClient("http://localhost:9334");
 // const rpcClient = new RpcClient("https://dev-test-node.incognito.org");
-// const rpcClient = new RpcClient("http://54.39.158.106:9334");
 // const rpcClient = new RpcClient("http://139.162.55.124:8334");   // dev-net
 
 let wallet;
@@ -42,8 +41,8 @@ let receiverPaymentAddrStr2;
 async function setup(){
     // await sleep(10000);
     wallet = new Wallet();
-    await wallet.setProvider("http://localhost:9334");
-    senderPrivateKeyStr = "112t8rnXoBXrThDTACHx2rbEq7nBgrzcZhVZV4fvNEcGJetQ13spZRMuW5ncvsKA1KvtkauZuK2jV8pxEZLpiuHtKX3FkKv2uC5ZeRC8L6we";
+    await wallet.setProvider("http://139.162.55.124:8334");
+    senderPrivateKeyStr = "112t8rnZDRztVgPjbYQiXS7mJgaTzn66NvHD7Vus2SrhSAY611AzADsPFzKjKQCKWTgbkgYrCPo9atvSMoCf9KT23Sc7Js9RKhzbNJkxpJU6";
     // senderKeyWallet = base58CheckDeserialize(senderPrivateKeyStr);
     // await senderKeyWallet.KeySet.importFromPrivateKey(senderKeyWallet.KeySet.PrivateKey);
     // accountSender.key = senderKeyWallet;
@@ -145,9 +144,9 @@ async function TestCreateAndSendNativeToken() {
 
     let paymentInfosParam = [];
     paymentInfosParam[0] = {
-        "PaymentAddress": receiverPaymentAddrStr,
+        "PaymentAddress": senderPaymentAddressStr,
         "Amount": amountTransfer,
-        "Message": "ABC"
+        "Message": ""
     };
 
     // create and send PRV
@@ -610,58 +609,58 @@ async function MainRoutine(){
 }
 // MainRoutine();
 
-// to run this test flow, make sure the account has about 2.5mil PRV, 120k of each of FIRST and SECOND token; all version 2
-async function PDERoutine(){
-    console.log("BEGIN PDE TEST");
-    try{
-        let txh;
-        // // 10:1 ratio; contribute 1mil PRV and 100k token
-        txh = await TestCustomContribution("first-prv", null, 1000000);
-        // console.debug(txh);
-        await accountSender.waitTx(txh, 5);
-        txh = await TestCustomContribution("first-prv", tokenID, 100000);
-        await accountSender.waitTx(txh, 5);
-        // sell 10000 PRV for at least 800 token
-        txh = await TestCustomTradeRequest(null, tokenID, 10000, 800);
-        await accountSender.waitTx(txh, 5);
-        // sell 1000 token for at least 8000 PRV
-        txh = await TestCustomTradeRequest(tokenID, null, 1000, 8000);
-        // the final wait time is extended to accomodate beacon response delay
-        await accountSender.waitTx(txh, 15);
-
-        // to cross trade, we need the above pair and a new second-prv pair
-        // also 10:1 ratio
-        txh = await TestCustomContribution("second-prv", null, 1000000);
-        await accountSender.waitTx(txh, 5);
-        txh = await TestCustomContribution("second-prv", secondTokenID, 100000);
-        await accountSender.waitTx(txh, 5);
-        // sell 15000 FIRST for at least 14000 SECOND
-        txh = await TestCustomTradeRequest(tokenID, secondTokenID, 15000, 10000);
-        await accountSender.waitTx(txh, 5);
-        // sell 5000 SECOND for at least 4000 PRV
-        txh = await TestCustomTradeRequest(secondTokenID, tokenID, 5000, 3000);
-        await accountSender.waitTx(txh, 15);
-        // deprecated test flows
-        // await TestCreateAndSendPRVContributionTx();
-        // await wallet.sleep(10000);
-        // await TestCreateAndSendPTokenContributionTx();
-        // await wallet.sleep(30000);
-        // console.log("TRADE");
-        // await TestCreateAndSendNativeTokenTradeRequestTx();
-        // await wallet.sleep(30000);
-        // await TestCreateAndSendPTokenTradeRequestTx();
-        // await wallet.sleep(100000);
-        // await TestCreateAndSendPDEWithdrawTx();
-        // await wallet.sleep(100000);
-        console.log("Remember to check the balance of these accounts")
-    }catch(e){
-        console.log("Test failed");
-        console.error(e);
-        throw e;
-    }
-    console.log("END PDE TEST");
-}
-PDERoutine();
+// // to run this test flow, make sure the account has about 2.5mil PRV, 120k of each of FIRST and SECOND token; all version 2
+// async function PDERoutine(){
+//     console.log("BEGIN PDE TEST");
+//     try{
+//         let txh;
+//         // // 10:1 ratio; contribute 1mil PRV and 100k token
+//         txh = await TestCustomContribution("first-prv", null, 1000000);
+//         // console.debug(txh);
+//         await accountSender.waitTx(txh, 5);
+//         txh = await TestCustomContribution("first-prv", tokenID, 100000);
+//         await accountSender.waitTx(txh, 5);
+//         // sell 10000 PRV for at least 800 token
+//         txh = await TestCustomTradeRequest(null, tokenID, 10000, 800);
+//         await accountSender.waitTx(txh, 5);
+//         // sell 1000 token for at least 8000 PRV
+//         txh = await TestCustomTradeRequest(tokenID, null, 1000, 8000);
+//         // the final wait time is extended to accomodate beacon response delay
+//         await accountSender.waitTx(txh, 15);
+//
+//         // to cross trade, we need the above pair and a new second-prv pair
+//         // also 10:1 ratio
+//         txh = await TestCustomContribution("second-prv", null, 1000000);
+//         await accountSender.waitTx(txh, 5);
+//         txh = await TestCustomContribution("second-prv", secondTokenID, 100000);
+//         await accountSender.waitTx(txh, 5);
+//         // sell 15000 FIRST for at least 14000 SECOND
+//         txh = await TestCustomTradeRequest(tokenID, secondTokenID, 15000, 10000);
+//         await accountSender.waitTx(txh, 5);
+//         // sell 5000 SECOND for at least 4000 PRV
+//         txh = await TestCustomTradeRequest(secondTokenID, tokenID, 5000, 3000);
+//         await accountSender.waitTx(txh, 15);
+//         // deprecated test flows
+//         // await TestCreateAndSendPRVContributionTx();
+//         // await wallet.sleep(10000);
+//         // await TestCreateAndSendPTokenContributionTx();
+//         // await wallet.sleep(30000);
+//         // console.log("TRADE");
+//         // await TestCreateAndSendNativeTokenTradeRequestTx();
+//         // await wallet.sleep(30000);
+//         // await TestCreateAndSendPTokenTradeRequestTx();
+//         // await wallet.sleep(100000);
+//         // await TestCreateAndSendPDEWithdrawTx();
+//         // await wallet.sleep(100000);
+//         console.log("Remember to check the balance of these accounts")
+//     }catch(e){
+//         console.log("Test failed");
+//         console.error(e);
+//         throw e;
+//     }
+//     console.log("END PDE TEST");
+// }
+// PDERoutine();
 
 // to use this test flow, make sure acc1 has some 10000s in PRV in version 2 coins
 async function DefragmentRoutine(){
@@ -678,3 +677,6 @@ async function DefragmentRoutine(){
     console.log("END DEFRAG TEST");
 }
 // DefragmentRoutine()
+
+setup();
+TestCreateAndSendNativeToken();

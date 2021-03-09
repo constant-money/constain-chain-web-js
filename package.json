@@ -23,23 +23,22 @@
   "homepage": "https://github.com/incognitochain/incognito-chain-web-js#readme",
   "dependencies": {
     "axios": "^0.19.0",
-    "circular-json": "^0.5.9",
+    "bip39": "^3.0.3",
     "crypto-js": "^3.1.9-1",
     "esm": "^3.2.25",
+    "hdkey": "^2.0.1",
     "lodash": "^4.17.20",
-    "sha3": "^2.0.7",
-    "yarn": "^1.19.1"
+    "sha3": "^2.0.7"
   },
   "devDependencies": {
     "@babel/cli": "^7.2.3",
     "@babel/core": "^7.12.10",
     "@babel/node": "^7.2.2",
     "@babel/plugin-proposal-class-properties": "^7.3.4",
-    "@babel/preset-env": "^7.12.11",
     "@babel/polyfill": "^7.2.5",
+    "@babel/preset-env": "^7.12.11",
     "babel-loader": "^8.2.2",
     "babel-plugin-lodash": "^3.3.4",
-    "core-js": "3",
     "file-loader": "^4.0.0",
     "fs": "0.0.1-security",
     "lodash-webpack-plugin": "^0.11.6",

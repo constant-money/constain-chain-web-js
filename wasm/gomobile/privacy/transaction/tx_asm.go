@@ -1,8 +1,9 @@
-package internal
+package transaction
 
-import(
+import (
 	"encoding/base64"
 	"encoding/json"
+	"incognito-chain/util"
 	"math/big"
 	// "fmt"
 	"strconv"
@@ -12,15 +13,14 @@ import(
 	"incognito-chain/common"
 	"incognito-chain/common/base58"
 	"incognito-chain/key/incognitokey"
+	"incognito-chain/key/wallet"
+	"incognito-chain/metadata"
 	"incognito-chain/privacy"
 	"incognito-chain/privacy/privacy_v2/mlsag"
-	"incognito-chain/metadata"
-	"incognito-chain/key/wallet"
-
 )
 
 const MaxSizeByte = (1 << 8) - 1
-var b58 = base58.Base58Check{}
+var B58 = base58.Base58Check{}
 
 type b58CompatBytes []byte
 func (b b58CompatBytes) MarshalJSON() ([]byte, error){
@@ -28,7 +28,7 @@ func (b b58CompatBytes) MarshalJSON() ([]byte, error){
 	if len([]byte(b))==0{
 		res = ""
 	}else{
-		res = b58.Encode(b, common.ZeroByte)
+		res = B58.Encode(b, common.ZeroByte)
 	}
 	// println(res)
 	return json.Marshal(res)
@@ -41,7 +41,7 @@ func (b *b58CompatBytes) UnmarshalJSON(src []byte) error{
 		return nil
 	}
 	// println(theStr)
-	res, _, err := b58.Decode(theStr)
+	res, _, err := B58.Decode(theStr)
 	*b = res
 	return err
 }
@@ -183,13 +183,13 @@ func MakeCoinCache() *CoinCache{
 	}
 }
 
-var b64 = base64.StdEncoding
-var genericError = errors.New("Generic error for ASM")
+var B64 = base64.StdEncoding
+var GenericError = errors.New("Generic error for ASM")
 
 // []byte equivalents are by default encoded with base64 when handled by JSON
 type InitParamsAsm struct{
 	SenderSK    privacy.PrivateKey		`json:"SenderSK"`
-	PaymentInfo []printedPaymentInfo	`json:"PaymentInfo"`
+	PaymentInfo []PrintedPaymentInfo	`json:"PaymentInfo"`
 	InputCoins  []CoinInter 	 		`json:"InputCoins"`
 	Fee         uint64 					`json:"Fee"`
 	HasPrivacy  bool 					`json:"HasPrivacy,omitempty"`
@@ -198,8 +198,8 @@ type InitParamsAsm struct{
 	Info        []byte 					`json:"Info,omitempty"`
 	Kvargs		map[string]interface{} 	`json:"Kvargs,omitempty"`
 
-	Cache 		CoinCache 				`json:"CoinCache"`
-	TokenParams *TokenInnerParams 		`json:"TokenParams,omitempty"`
+	Cache 		CoinCache        `json:"CoinCache"`
+	TokenParams *TokenInnerParams `json:"TokenParams,omitempty"`
 }
 
 type TxPrivacyInitParams struct {
@@ -266,7 +266,7 @@ func (params *InitParamsAsm) GetGenericParams() *TxPrivacyInitParams{
 		temp, _ := payInf.To()
 		pInfos = append(pInfos, temp)
 	}
-	tid, err := getTokenIDFromString(params.TokenID)
+	tid, err := GetTokenIDFromString(params.TokenID)
 	if err!=nil{
 		println(err.Error())
 		return nil
@@ -287,13 +287,13 @@ func (params *InitParamsAsm) GetGenericParams() *TxPrivacyInitParams{
 	return NewTxParams(&params.SenderSK, pInfos, ics, params.Fee, params.HasPrivacy, &tid, md, info)
 }
 
-type printedPaymentInfo struct {
+type PrintedPaymentInfo struct {
 	PaymentAddress json.RawMessage 		`json:"PaymentAddress"`
 	Amount         string 				`json:"Amount"`
 	Message        []byte 			 	`json:"Message",omitempty`
 }
 
-func (pp printedPaymentInfo) To() (*privacy.PaymentInfo, error){
+func (pp PrintedPaymentInfo) To() (*privacy.PaymentInfo, error){
 	result := &privacy.PaymentInfo{}
 	var theStr string
 	err := json.Unmarshal(pp.PaymentAddress, &theStr)
@@ -314,12 +314,12 @@ func (pp printedPaymentInfo) To() (*privacy.PaymentInfo, error){
 	result.Message 	= pp.Message
 	return result, nil
 }
-func (pp *printedPaymentInfo) From(pInf *privacy.PaymentInfo) {
+func (pp *PrintedPaymentInfo) From(pInf *privacy.PaymentInfo) {
 	kw := &wallet.KeyWallet{}
 	kw.KeySet = incognitokey.KeySet{}
 	kw.KeySet.PaymentAddress = pInf.PaymentAddress
 	paStr := kw.Base58CheckSerialize(wallet.PaymentAddressType)
-	result := printedPaymentInfo{}
+	result := PrintedPaymentInfo{}
 	result.PaymentAddress, _ = json.Marshal(paStr)
 	result.Amount  = strconv.FormatUint(pInf.Amount, 10)
 	result.Message = pInf.Message
@@ -617,11 +617,11 @@ func generateMlsagRing(inputCoins []privacy.PlainCoin, inputIndexes []uint64, ou
 			}
 		} else {
 			for j := 0; j < len(inputCoins); j += 1 {
-				temp, _ := RandBigIntMaxRange(randRange)
+				temp, _ := util.RandBigIntMaxRange(randRange)
 				pos := int(temp.Uint64())
 				pkBytes := coinCache.PublicKeys[pos]
 				commitmentBytes := coinCache.Commitments[pos]
-				// key := b58.Encode(pkBytes, common.ZeroByte)
+				// key := B58.Encode(pkBytes, common.ZeroByte)
 				rowIndexes[j] = big.NewInt(0).SetUint64(coinCache.Indexes[pos])
 				row[j], _ = new(privacy.Point).FromBytesS(pkBytes)
 
@@ -682,7 +682,7 @@ func (tx *Tx) sign(inp []privacy.PlainCoin, inputIndexes []uint64, out []*privac
 
 
 	// Generate Ring
-	piBig, piErr := RandBigIntMaxRange(big.NewInt(int64(ringSize)))
+	piBig, piErr := util.RandBigIntMaxRange(big.NewInt(int64(ringSize)))
 	if piErr!=nil{
 		return piErr
 	}
@@ -774,7 +774,7 @@ func (tx *Tx) InitASM(params *InitParamsAsm, theirTime int64) error {
 	return nil
 }
 
-func (tx *Tx) initializeTxAndParams(params_compat *TxPrivacyInitParams, paymentsPtr *[]printedPaymentInfo) error {
+func (tx *Tx) initializeTxAndParams(params_compat *TxPrivacyInitParams, paymentsPtr *[]PrintedPaymentInfo) error {
 	var err error
 	// Get Keyset from param
 	skBytes := *params_compat.SenderSK
@@ -787,7 +787,7 @@ func (tx *Tx) initializeTxAndParams(params_compat *TxPrivacyInitParams, payments
 	}
 	tx.Fee = params_compat.Fee
 	// normal type indicator
-	tx.Type = TxNormalType
+	tx.Type = util.TxNormalType
 	tx.Metadata = params_compat.Metadata
 	tx.pubKeyLastByteSender = common.GetShardIDFromLastByte(senderPaymentAddress.Pk[len(senderPaymentAddress.Pk)-1])
 	// we don't support version 1
@@ -841,7 +841,7 @@ func createPrivKeyMlsag(inputCoins []privacy.PlainCoin, outputCoins []*privacy.C
 	return privKeyMlsag, nil
 }
 
-func updateParamsWhenOverBalance(originPInfs *[]printedPaymentInfo, gParams *TxPrivacyInitParams, senderPaymentAddree privacy.PaymentAddress) error {
+func updateParamsWhenOverBalance(originPInfs *[]PrintedPaymentInfo, gParams *TxPrivacyInitParams, senderPaymentAddree privacy.PaymentAddress) error {
 	// Calculate sum of all output coins' value
 	sumOutputValue := uint64(0)
 	for _, p := range *originPInfs {
@@ -867,7 +867,7 @@ func updateParamsWhenOverBalance(originPInfs *[]printedPaymentInfo, gParams *TxP
 		temp := new(privacy.PaymentInfo)
 		temp.Amount = uint64(overBalance)
 		temp.PaymentAddress = senderPaymentAddree
-		changePaymentInfo := &printedPaymentInfo{}
+		changePaymentInfo := &PrintedPaymentInfo{}
 
 		changePaymentInfo.From(temp)
 		// println("change to", string(changePaymentInfo.PaymentAddress), "with amount", overBalance)
@@ -878,7 +878,7 @@ func updateParamsWhenOverBalance(originPInfs *[]printedPaymentInfo, gParams *TxP
 	return nil
 }
 
-func getTokenIDFromString(s string) (common.Hash, error){
+func GetTokenIDFromString(s string) (common.Hash, error){
 	if len(s)==0{
 		return common.PRVCoinID, nil
 	}else{
